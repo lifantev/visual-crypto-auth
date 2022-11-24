@@ -1,6 +1,6 @@
-from flask import Flask, request, render_template
-import hashlib
-import uuid
+from flask import Flask, request, render_template, send_file, send_from_directory
+import hashlib, os
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -13,20 +13,23 @@ def hash(str):
     return hashlib.sha256(str.encode()).hexdigest()
 
 
-@app.route('/authorization', methods=['GET', 'POST'])
-def form_authorization():
+@app.route('/auth', methods=['GET', 'POST'])
+def form_auth():
 
     if request.method == 'POST':
         login = request.form.get('Login')
         password = request.form.get('Password')
-        # private_image = request.form.get('iKey')
+        private_img = request.files.get('iKey', '')
 
         if login not in storage:
             return render_template('auth_bad.html')
 
         h_creds = hash(login + password)
+        stored_img = Image.open("./static/storage/{storage[login]}.jpg", "r")
         # create qr from h_creds
-        # check equality of creds using visual_crypto
+        # check equality of creds using visual_crypto_check(private_image, stored_img, generated_from_creds_qr)
+        
+        # for tesing only
         auth_ok = storage[login] == password
         
         if auth_ok:
@@ -37,25 +40,38 @@ def form_authorization():
     return render_template('auth.html')
 
 
-@app.route('/registration', methods=['GET', 'POST'])
-def form_registration():
+@app.route('/reg', methods=['GET', 'POST'])
+def form_reg():
 
     if request.method == 'POST':
         login = request.form.get('Login')
         password = request.form.get('Password')
 
+        if login in storage:
+            return render_template('reg_bad.html')
+
+
         h_creds = hash(login + password)
         # create qr from h_creds
         # visual_crypto(qr) -> private_img, stored_img
-        # todo:
+        private_img = Image.open("./static/storage/{private_img_name}.jpg", "r")
+
+        # for testing only
         stored_img = password
-
         storage[login] = stored_img
+        
+        # todo: uncomment
+        # storage[login] = login
+        # stored_img.save("./static/storage/{login}.jpg")
 
-        # todo: return private_img
-        return render_template('reg_ok.html')
+        return render_template('reg_ok.html', img_ref = 'storage/{private_img_name}.jpg')
 
     return render_template('reg.html')
+
+
+@app.route('/iKey/<path:filename>', methods=['GET', 'POST'])
+def iKey(filename):
+    return send_file(filename, as_attachment=True)
 
 
 if __name__ == "__main__":

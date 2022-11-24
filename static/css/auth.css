@@ -10,7 +10,7 @@ form {
 
 }
 
-input[type=text], input[type=password] {
+input[type=text], input[type=password], input[type=file] {
     text-align: center;
     -webkit-border-radius: 4px;
     width: auto;
